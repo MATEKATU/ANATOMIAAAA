@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz – Anatomía de Cráneo y Cara</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap');
+  :root {
+    --bg: #0d1117; --surface: #161b22; --card: #1c2333; --border: #30363d;
+    --accent: #58a6ff; --accent2: #3fb950; --danger: #f85149; --warning: #e3b341;
+    --text: #e6edf3; --muted: #8b949e; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 60px; }
+  header { text-align: center; margin-bottom: 32px; max-width: 680px; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--accent); margin-bottom: 6px; }
+  header p { color: var(--muted); font-size: 0.9rem; }
+
+  #cronograma { width: 100%; max-width: 680px; margin-bottom: 40px; }
+  #cronograma h2 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--accent); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .timeline { display: flex; flex-direction: column; position: relative; }
+  .timeline::before { content:''; position:absolute; left:14px; top:6px; bottom:6px; width:2px; background:var(--border); }
+  .tl-item { display: flex; gap: 16px; padding: 10px 0; }
+  .tl-dot { width:30px; min-width:30px; height:30px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:600; color:#0d1117; z-index:1; }
+  .tl-content { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; flex:1; }
+  .tl-content strong { display:block; color:var(--accent); font-size:0.8rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+  .tl-content span { font-size:0.88rem; line-height:1.5; }
+
+  #quiz-section { width:100%; max-width:680px; }
+  #quiz-section h2 { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--accent); margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+  .progress-wrap { background:var(--surface); border-radius:99px; height:6px; margin-bottom:8px; overflow:hidden; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:99px; transition:width .4s ease; width:0%; }
+  .q-counter { text-align:right; font-size:0.8rem; color:var(--muted); margin-bottom:16px; }
+
+  .q-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; }
+  .topic-tag { font-size:0.72rem; text-transform:uppercase; letter-spacing:.07em; color:var(--accent); display:block; margin-bottom:6px; }
+  .multi-hint { font-size:0.78rem; color:var(--warning); font-style:italic; display:block; margin-bottom:14px; }
+  .q-text { font-size:1rem; font-weight:500; line-height:1.6; margin-bottom:20px; }
+
+  /* OPTIONS */
+  .options { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+  .opt {
+    display:flex; align-items:flex-start; gap:12px;
+    background:var(--surface); border:2px solid var(--border);
+    border-radius:8px; padding:12px 16px; cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .opt:hover { border-color:var(--accent); background:#1a2535; }
+  .opt.selected { border-color:var(--accent); background:#162030; }
+  .opt.correct { border-color:var(--accent2) !important; background:#0a1f10 !important; }
+  .opt.wrong   { border-color:var(--danger)  !important; background:#1f0a0a !important; }
+  .opt.missed  { border-color:var(--warning) !important; background:#1f1800 !important; }
+
+  .box {
+    width:20px; min-width:20px; height:20px; border-radius:4px;
+    border:2px solid var(--muted); background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .15s; margin-top:1px; font-size:13px; font-weight:700;
+    color:transparent;
+  }
+  .opt.selected .box { background:var(--accent); border-color:var(--accent); color:#0d1117; }
+  .opt.correct  .box { background:var(--accent2); border-color:var(--accent2); color:#0d1117; }
+  .opt.wrong    .box { background:var(--danger); border-color:var(--danger); color:#fff; }
+  .opt.missed   .box { background:var(--warning); border-color:var(--warning); color:#0d1117; }
+
+  .opt-text { font-size:0.9rem; line-height:1.4; }
+  .opt.correct .opt-text { color:var(--accent2); font-weight:500; }
+  .opt.wrong   .opt-text { color:var(--danger); }
+  .opt.missed  .opt-text { color:var(--warning); }
+
+  /* BUTTONS */
+  .btn-check {
+    background:var(--accent); color:#0d1117; border:none; border-radius:8px;
+    padding:11px 28px; font-size:0.95rem; font-weight:600; cursor:pointer;
+    transition:opacity .15s;
+  }
+  .btn-check:disabled { opacity:.35; cursor:not-allowed; }
+  .btn-check:not(:disabled):hover { opacity:.85; }
+
+  .btn-next {
+    display:none; background:#238636; color:#fff; border:none; border-radius:8px;
+    padding:11px 28px; font-size:0.95rem; font-weight:600; cursor:pointer;
+    margin-left:10px; transition:opacity .15s;
+  }
+  .btn-next:hover { opacity:.85; }
+
+  .feedback { display:none; margin-top:16px; padding:14px 16px; border-radius:8px; font-size:0.88rem; line-height:1.6; }
+  .feedback.ok      { display:block; background:#0a1f10; border:1px solid var(--accent2); color:var(--accent2); }
+  .feedback.partial { display:block; background:#1f1800; border:1px solid var(--warning); color:var(--warning); }
+  .feedback.fail    { display:block; background:#1f0a0a; border:1px solid var(--danger);  color:#ffb3b0; }
+
+  /* RESULTS */
+  #results { display:none; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:36px 24px; text-align:center; }
+  #results h3 { font-family:'DM Serif Display',serif; font-size:1.8rem; color:var(--accent); margin-bottom:8px; }
+  .score-num { font-size:3.5rem; font-weight:700; margin:16px 0 4px; }
+  .score-bar-wrap { background:var(--surface); border-radius:99px; height:10px; max-width:320px; margin:12px auto 20px; overflow:hidden; }
+  .score-bar-fill { height:100%; border-radius:99px; transition:width .8s ease; }
+  #results p { color:var(--muted); margin-bottom:24px; font-size:0.95rem; }
+  .btn-restart { background:var(--accent); color:#0d1117; border:none; border-radius:8px; padding:12px 32px; font-size:0.95rem; font-weight:600; cursor:pointer; }
+  .btn-restart:hover { opacity:.85; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Anatomía de Cráneo y Cara</h1>
+  <p>Guía Anatómica – Dr. Raúl Fernando Gulino Canese</p>
+</header>
+
+<!-- CRONOGRAMA -->
+<section id="cronograma">
+  <h2>📋 Cronograma de Temas</h2>
+  <div class="timeline">
+    <div class="tl-item"><div class="tl-dot">1</div><div class="tl-content"><strong>Regiones Comunes al Cráneo y la Cara</strong><span>Cavidad Orbitaria, Fosas Nasales, Fosa Temporal, Infratemporal, Pterigomaxilar, Fosas Craneales y Boca.</span></div></div>
+    <div class="tl-item"><div class="tl-dot">2</div><div class="tl-content"><strong>Cavidad Orbitaria (Órbita)</strong><span>Paredes, bordes, base, vértice, orificios (Óptico, Hendidura Esfenoidal, Esfenomaxilar), vasos y nervios.</span></div></div>
+    <div class="tl-item"><div class="tl-dot">3</div><div class="tl-content"><strong>Fosas Nasales</strong><span>Paredes, cornetes, meatos, senos paranasales, aberturas anterior y posterior (Coanas), vasos y nervios.</span></div></div>
+    <div class="tl-item"><div class="tl-dot">4</div><div class="tl-content"><strong>Región Temporal e Infratemporal</strong><span>Límites, constitución ósea (Pterion), contenido: músculo Temporal, arteria Maxilar interna, nervio Maxilar inferior.</span></div></div>
+    <div class="tl-item"><div class="tl-dot">5</div><div class="tl-content"><strong>Fosa Pterigomaxilar</strong><span>Paredes, relaciones, orificios (Redondo mayor, Hendidura Esfenomaxilar, Agujero Esfenopalatino) y contenido.</span></div></div>
+    <div class="tl-item"><div class="tl-dot">6</div><div class="tl-content"><strong>Boca</strong><span>Vestíbulo, cavidad bucal, paredes: Labios, Velo del Paladar, Bóveda Palatina, Piso de la Boca, Mejillas.</span></div></div>
+    <div class="tl-item"><div class="tl-dot">7</div><div class="tl-content"><strong>Lengua</strong><span>Músculos intrínsecos y extrínsecos, papilas gustativas, arteria Lingual, nervios: Hipogloso, Glosofaríngeo, Lingual y Facial.</span></div></div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz-section">
+  <h2>🧠 Quiz de Selección Múltiple (25 preguntas)</h2>
+  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="q-counter" id="qCounter">Pregunta 1 de 25</div>
+
+  <div class="q-card" id="qCard">
+    <span class="topic-tag" id="topicTag"></span>
+    <span class="multi-hint" id="multiHint"></span>
+    <p class="q-text" id="qText"></p>
+    <div class="options" id="optionsDiv"></div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+      <button class="btn-check" id="btnCheck" disabled onclick="checkAnswer()">Verificar</button>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()">Siguiente →</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div id="results">
+    <h3>¡Quiz completado!</h3>
+    <div class="score-num" id="scoreNum"></div>
+    <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+    <p id="scoreMsg"></p>
+    <button class="btn-restart" onclick="restartQuiz()">🔄 Repetir Quiz</button>
+  </div>
+</section>
+
+<script>
+const qs = [
+  { topic:"Cavidad Orbitaria", multi:true,
+    q:"¿Qué huesos forman la pared SUPERIOR de la cavidad orbitaria? (marca todos los correctos)",
+    opts:["Hueso Frontal","Ala menor del Esfenoides","Hueso Malar","Hueso Etmoides"],
+    ans:[0,1],
+    exp:"La pared superior está formada por el Frontal (por delante) y el ala menor del Esfenoides (por atrás)." },
+
+  { topic:"Cavidad Orbitaria", multi:true,
+    q:"¿Qué estructuras pasan por la Hendidura Esfenoidal? (marca todas)",
+    opts:["Nervio Óptico","Nervio Oculomotor (III par)","Nervio Troclear (IV par)","Nervio Abducens (VI par)","Vena Oftálmica","Arteria Oftálmica"],
+    ans:[1,2,3,4],
+    exp:"Por la Hendidura Esfenoidal pasan: III, IV, VI pares, nervio Oftálmico y vena Oftálmica. El nervio Óptico y arteria Oftálmica van por el Agujero Óptico." },
+
+  { topic:"Cavidad Orbitaria", multi:false,
+    q:"¿Qué orificio comunica la Órbita con la cavidad Craneal transmitiendo el nervio Óptico y la arteria Oftálmica?",
+    opts:["Hendidura Esfenoidal","Agujero Óptico","Conducto Etmoidal anterior","Hendidura Esfenomaxilar"],
+    ans:[1],
+    exp:"El Agujero Óptico comunica la Órbita con la cavidad Craneal y por él pasan el nervio Óptico y la arteria Oftálmica." },
+
+  { topic:"Cavidad Orbitaria", multi:true,
+    q:"¿Cuáles son ramas colaterales de la arteria Oftálmica? (marca todas)",
+    opts:["Arteria para el nervio Óptico","Arteria Lagrimal","Arteria Central de la Retina","Arteria Supraorbitaria","Arterias Ciliares","Arteria Facial"],
+    ans:[0,1,2,3,4],
+    exp:"La arteria Oftálmica da: arteria para el nervio Óptico, Lagrimal, Central de la Retina, Supraorbitaria, Ciliares, Etmoidales y Palpebrales. La Facial NO es rama de la Oftálmica." },
+
+  { topic:"Fosas Nasales", multi:true,
+    q:"¿En cuál meato desembocan las celdas Etmoidales POSTERIORES y el seno Esfenoidal?",
+    opts:["Meato superior","Meato medio","Meato inferior"],
+    ans:[0],
+    exp:"En el Meato superior desembocan el orificio del seno Esfenoidal y las celdas Etmoidales posteriores." },
+
+  { topic:"Fosas Nasales", multi:true,
+    q:"¿Cuáles estructuras desembocan en el Meato MEDIO? (marca todas)",
+    opts:["Orificio del seno Maxilar","Orificio del seno Frontal","Celdas Etmoidales anteriores","Conducto Nasal (Lacrimonasal)","Seno Esfenoidal"],
+    ans:[0,1,2],
+    exp:"En el Meato medio desembocan: orificio del seno Maxilar, orificio del seno Frontal y celdas Etmoidales anteriores." },
+
+  { topic:"Fosas Nasales", multi:true,
+    q:"¿Qué huesos forman la pared SUPERIOR (techo) de las fosas nasales? (marca todos)",
+    opts:["Huesos propios de la Nariz","Frontal (espina Nasal)","Etmoides (lámina Cribosa)","Esfenoides (cuerpo)","Palatino (apófisis Esfenoidal)","Maxilar superior"],
+    ans:[0,1,2,3,4],
+    exp:"La pared superior está constituida de delante hacia atrás por: huesos propios de la Nariz, Frontal, Etmoides (lámina Cribosa), Esfenoides y Palatino (apófisis Esfenoidal). El Maxilar superior forma la pared inferior." },
+
+  { topic:"Fosas Nasales", multi:true,
+    q:"¿Qué nervios proporcionan la inervación SENSITIVA de las fosas nasales?",
+    opts:["Nervio Oftálmico (ramos del Trigémino)","Nervio Maxilar superior (del Trigémino)","Nervio Facial","Nervio Hipogloso"],
+    ans:[0,1],
+    exp:"La inervación sensitiva la proporcionan el nervio Oftálmico (vía nervios Etmoidales) y el nervio Maxilar superior, ambos ramos del Trigémino." },
+
+  { topic:"Región Temporal", multi:true,
+    q:"¿Qué huesos constituyen la región Temporal?",
+    opts:["Parietal","Temporal (escama)","Esfenoides (ala mayor)","Frontal","Occipital"],
+    ans:[0,1,2],
+    exp:"La región Temporal está constituida por Parietal, Temporal (escama) y Esfenoides (ala mayor). El punto de unión de estos tres más el Frontal forma el Pterion." },
+
+  { topic:"Región Temporal", multi:true,
+    q:"¿Cuál es el contenido de la región Temporal? (marca todos)",
+    opts:["Músculo Temporal","Fascia Temporal","Vasos y nervios Temporales","Músculo Masetero","Ganglio de Gasser"],
+    ans:[0,1,2],
+    exp:"El contenido de la región Temporal es: el músculo Temporal, la fascia Temporal y los vasos y nervios Temporales." },
+
+  { topic:"Región Infratemporal", multi:true,
+    q:"¿Cuáles forman parte del contenido de la fosa Infratemporal? (marca todos)",
+    opts:["Tendón del músculo Temporal","Músculos Pterigoideos externo e interno","Arteria Maxilar interna","Nervio Maxilar inferior y sus ramos","Ganglio Ótico","Nervio Facial"],
+    ans:[0,1,2,3,4],
+    exp:"El contenido incluye: tendón del músculo Temporal, músculos Pterigoideos, arteria Maxilar interna, plexo venoso Pterigoideo, nervio Maxilar inferior y sus ramos, y el ganglio Ótico." },
+
+  { topic:"Fosa Pterigomaxilar", multi:true,
+    q:"¿Qué huesos forman la fosa Pterigomaxilar?",
+    opts:["Esfenoides","Palatino","Maxilar superior","Temporal","Malar"],
+    ans:[0,1,2],
+    exp:"La fosa Pterigomaxilar está formada por Esfenoides, Palatino y Maxilar superior." },
+
+  { topic:"Fosa Pterigomaxilar", multi:true,
+    q:"¿Cuáles orificios de la fosa Pterigomaxilar comunican con las fosas Nasales? (marca todos)",
+    opts:["Orificio Redondo mayor","Agujero Esfenopalatino","Conducto Pterigopalatino","Hendidura Esfenomaxilar","Conducto Vidiano"],
+    ans:[1,2],
+    exp:"El Agujero Esfenopalatino y el Conducto Pterigopalatino comunican la fosa Pterigomaxilar con las fosas Nasales." },
+
+  { topic:"Fosa Pterigomaxilar", multi:true,
+    q:"¿Cuál es el contenido de la fosa Pterigomaxilar? (marca todos)",
+    opts:["Porción terminal de la arteria Maxilar interna","Nervio Maxilar superior","Ganglio Esfenopalatino (ganglio de Meckel)","Nervio Facial","Arteria Carótida interna"],
+    ans:[0,1,2],
+    exp:"El contenido de la fosa Pterigomaxilar: porción terminal de la arteria Maxilar interna, nervio Maxilar superior y ganglio Esfenopalatino (ganglio de Meckel)." },
+
+  { topic:"Boca", multi:true,
+    q:"¿Cuáles son funciones de la Boca? (marca todas las correctas)",
+    opts:["Masticación","Salivación","Deglución","Articulación de la palabra","Sentido del Gusto (en la Lengua)","Sentido del Olfato"],
+    ans:[0,1,2,3,4],
+    exp:"La Boca cumple funciones de masticación, salivación, deglución, articulación de la palabra y en ella se encuentra el sentido del Gusto. El Olfato es función de las fosas Nasales." },
+
+  { topic:"Boca", multi:true,
+    q:"¿Qué arterias irrigan los Labios? (marca todas)",
+    opts:["Arteria Coronaria labial superior","Arteria Coronaria labial inferior","Arteria Temporal superficial","Arteria Palatina"],
+    ans:[0,1],
+    exp:"Los Labios están irrigados por las arterias Coronarias labiales superior e inferior, ramas de la arteria Facial." },
+
+  { topic:"Boca", multi:true,
+    q:"¿Qué músculos forman el Velo del Paladar?",
+    opts:["Palatoestafilino","Periestafilino interno","Buccinador","Milohioideo"],
+    ans:[0,1],
+    exp:"Los músculos del Velo del Paladar son el Palatoestafilino y el Periestafilino interno." },
+
+  { topic:"Boca", multi:true,
+    q:"¿Qué estructuras se encuentran en la región Sublingual (piso de la Boca)? (marca todas)",
+    opts:["Glándulas Sublinguales","Conducto de Warthon (glándula Submaxilar)","Arterias y venas Linguales","Nervio Lingual","Nervio Hipogloso","Glándula Parótida"],
+    ans:[0,1,2,3,4],
+    exp:"En la región Sublingual: glándulas Sublinguales, conducto de Warthon, arterias y venas Linguales, nervio Lingual y nervio Hipogloso. La Parótida está fuera de esta región." },
+
+  { topic:"Boca", multi:false,
+    q:"¿Qué músculo de la mejilla es perforado por el conducto de Stenon (Parotídeo)?",
+    opts:["Masetero","Buccinador","Pterigoideo interno","Orbicular de los Labios"],
+    ans:[1],
+    exp:"El músculo Buccinador, que forma la pared muscular de la mejilla, es perforado por el conducto de Stenon (Parotídeo)." },
+
+  { topic:"Lengua", multi:true,
+    q:"¿Cuáles son los músculos EXTRÍNSECOS de la lengua? (marca todos)",
+    opts:["Geniogloso","Hiogloso","Estilogloso","Palatogloso","Faringogloso","Transverso"],
+    ans:[0,1,2,3,4],
+    exp:"Los músculos extrínsecos son: Geniogloso, Hiogloso, Estilogloso, Palatogloso, Faringogloso, entre otros. El Transverso es el único músculo intrínseco (par)." },
+
+  { topic:"Lengua", multi:true,
+    q:"¿Cuáles afirmaciones sobre el músculo Geniogloso son correctas?",
+    opts:["Se inserta en la apófisis Geni superior del Maxilar inferior","Se extiende a toda la longitud de la Lengua","Su función es propulsar la Lengua (sacarla de la Boca)","Eleva y retrae la Lengua","Algunos fascículos llegan al hueso Hioides"],
+    ans:[0,1,2,4],
+    exp:"El Geniogloso se inserta en la apófisis Geni superior, se extiende a toda la longitud de la Lengua, propulsa la Lengua y algunos fascículos llegan al Hioides. Elevar y retraer es función del Estilogloso." },
+
+  { topic:"Lengua", multi:true,
+    q:"¿Qué nervios participan en la inervación de la Lengua? (marca todos)",
+    opts:["Nervio Hipogloso (XII)","Nervio Glosofaríngeo (IX)","Nervio Lingual (rama del V3)","Nervio Facial (VII)","Nervio Vago (X)"],
+    ans:[0,1,2,3,4],
+    exp:"Participan: Hipogloso (motora general), Glosofaríngeo (sensitiva y gustativa del 1/3 posterior), Lingual (sensitiva 2/3 anteriores), Facial vía cuerda del Tímpano (gustativa 2/3 anteriores), y Vago para el Palatogloso." },
+
+  { topic:"Lengua", multi:true,
+    q:"¿Cuáles son características de las Papilas Circunvaladas o Caliciformes? (marca todas)",
+    opts:["Son las más grandes de la lengua","Son 8 a 10 en número","Se ubican en la parte posterior de la Lengua","Se alinean en forma de V lingual","Son de forma cilíndrica","Son las más numerosas"],
+    ans:[0,1,2,3,4],
+    exp:"Las Circunvaladas son las más grandes, 8 a 10, en la parte posterior de la Lengua alineadas en V lingual y de forma cilíndrica. Las más numerosas son las Filiformes." },
+
+  { topic:"Lengua", multi:true,
+    q:"¿Qué estructuras se relacionan con el músculo Hiogloso? (marca todas)",
+    opts:["Vasos y nervios Linguales","Nervio Hipogloso","Conducto de Warthon","Prolongación de la glándula Submaxilar","Arteria Oftálmica"],
+    ans:[0,1,2,3],
+    exp:"El Hiogloso se relaciona con: vasos y nervios Linguales, nervio Hipogloso, conducto de Warthon y la prolongación de la glándula Submaxilar. La arteria Oftálmica no tiene relación con la lengua." },
+
+  { topic:"Lengua", multi:true,
+    q:"¿Cuáles afirmaciones sobre la arteria Lingual son correctas? (marca todas)",
+    opts:["Es rama colateral de la arteria Carótida externa","Pasa por la región Suprahioidea","Se relaciona con el músculo Hiogloso","Termina como arteria Ranina en la punta de la Lengua","Irriga la glándula Sublingual","Es rama de la arteria Maxilar interna"],
+    ans:[0,1,2,3,4],
+    exp:"La arteria Lingual: rama de la Carótida externa, pasa por la región Suprahioidea, se relaciona con el Hiogloso, irriga la glándula Sublingual y termina como arteria Ranina. No es rama de la Maxilar interna." }
+];
+
+let curQ = 0, score = 0, selected = [], answered = false;
+
+function loadQ() {
+  answered = false;
+  selected = [];
+  const q = qs[curQ];
+  document.getElementById('progressFill').style.width = ((curQ / qs.length) * 100) + '%';
+  document.getElementById('qCounter').textContent = 'Pregunta ' + (curQ + 1) + ' de ' + qs.length;
+  document.getElementById('topicTag').textContent = '📍 ' + q.topic;
+  document.getElementById('multiHint').textContent = q.multi
+    ? '☑ Selección múltiple — marca TODAS las correctas'
+    : '○ Selección única — elige UNA respuesta';
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('btnCheck').disabled = true;
+  document.getElementById('btnNext').style.display = 'none';
+
+  const div = document.getElementById('optionsDiv');
+  div.innerHTML = '';
+  q.opts.forEach(function(txt, i) {
+    const el = document.createElement('div');
+    el.className = 'opt';
+    el.id = 'opt' + i;
+    el.innerHTML = '<div class="box" id="box' + i + '">✓</div><span class="opt-text">' + txt + '</span>';
+    el.addEventListener('click', function() { handleClick(i); });
+    div.appendChild(el);
+  });
+}
+
+function handleClick(i) {
+  if (answered) return;
+  const q = qs[curQ];
+  const el = document.getElementById('opt' + i);
+  const box = document.getElementById('box' + i);
+
+  if (!q.multi) {
+    // radio behavior
+    selected = [i];
+    qs[curQ].opts.forEach(function(_, j) {
+      document.getElementById('opt' + j).classList.remove('selected');
+    });
+    el.classList.add('selected');
+  } else {
+    // checkbox behavior
+    const idx = selected.indexOf(i);
+    if (idx === -1) {
+      selected.push(i);
+      el.classList.add('selected');
+    } else {
+      selected.splice(idx, 1);
+      el.classList.remove('selected');
+    }
+  }
+  document.getElementById('btnCheck').disabled = selected.length === 0;
+}
+
+function checkAnswer() {
+  if (answered) return;
+  answered = true;
+  const q = qs[curQ];
+  document.getElementById('btnCheck').disabled = true;
+
+  // mark options
+  q.opts.forEach(function(_, i) {
+    const el = document.getElementById('opt' + i);
+    el.style.pointerEvents = 'none';
+    const isAns = q.ans.indexOf(i) !== -1;
+    const isSel = selected.indexOf(i) !== -1;
+    if (isAns && isSel)  { el.className = 'opt correct'; }
+    else if (!isAns && isSel) { el.className = 'opt wrong'; }
+    else if (isAns && !isSel) { el.className = 'opt missed'; }
+  });
+
+  const sortedAns = q.ans.slice().sort().join(',');
+  const sortedSel = selected.slice().sort().join(',');
+  const fb = document.getElementById('feedback');
+
+  if (sortedAns === sortedSel) {
+    score++;
+    fb.className = 'feedback ok';
+    fb.textContent = '✅ ¡Correcto! ' + q.exp;
+  } else {
+    const correctSelected = selected.filter(function(i){ return q.ans.indexOf(i) !== -1; }).length;
+    const wrongSelected   = selected.filter(function(i){ return q.ans.indexOf(i) === -1; }).length;
+    if (correctSelected > 0 && wrongSelected === 0) {
+      score += 0.5;
+      fb.className = 'feedback partial';
+      fb.textContent = '⚠️ Parcialmente correcto (faltaron opciones). ' + q.exp;
+    } else {
+      fb.className = 'feedback fail';
+      fb.textContent = '❌ Incorrecto. ' + q.exp;
+    }
+  }
+
+  document.getElementById('btnNext').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  curQ++;
+  if (curQ < qs.length) {
+    loadQ();
+  } else {
+    showResults();
+  }
+}
+
+function showResults() {
+  document.getElementById('qCard').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('progressFill').style.width = '100%';
+  const pct = Math.round((score / qs.length) * 100);
+  document.getElementById('scoreNum').textContent = score + ' / ' + qs.length;
+  const fill = document.getElementById('scoreBarFill');
+  fill.style.background = pct >= 80 ? 'var(--accent2)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+  setTimeout(function(){ fill.style.width = pct + '%'; }, 100);
+  const msgs = [
+    [90, '🏆 ¡Excelente! Dominas muy bien la anatomía de cráneo y cara.'],
+    [70, '👍 Buen desempeño. Repasa los temas donde fallaste.'],
+    [50, '📖 Rendimiento regular. Estudia el material nuevamente.'],
+    [0,  '📚 Necesitas repasar el material con más detalle.']
+  ];
+  document.getElementById('scoreMsg').textContent = msgs.find(function(m){ return pct >= m[0]; })[1];
+}
+
+function restartQuiz() {
+  curQ = 0; score = 0; selected = []; answered = false;
+  document.getElementById('qCard').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  loadQ();
+}
+
+loadQ();
+</script>
+</body>
+</html>
